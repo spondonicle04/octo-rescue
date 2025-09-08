@@ -1,15 +1,52 @@
+// main.cpp
+// Startup sketch for modular context engine
 #include <Arduino.h>
+#include "config.h"
+#include "context_registry.h"
+#include "menu_boot.h"
+#include "object_classes.h"
+#include "context_state.h"
+#include "contexts_init.h"
+#include "debug.h"
+#include "hal_buttons_simple.h"
+#include "event_router.h"
+#include <avr/wdt.h>
+#include <avr/io.h>
+#include "ui_draw.h"
+
+// Optional display object
 #include <U8g2lib.h>
+U8G2_ST7920_128X64_1_SW_SPI U8G2(U8G2_R0, LCD_CLK, LCD_MOSI, LCD_CS);
+//U8G2_ST7920_128X64_1_HW_SPI U8G2(U8G2_R0, /* cs=*/ 53);
+void setup() {
+  //Serial.begin(115200);
+  DEBUG_BEGIN();
+  hal_buttons_setup();
+  DL("Booting Context Engine...");
+  
+  // Init display
+  U8G2.begin();
 
-// Mega HW SPI: SCK=52, MOSI=51, CS=53 (change CS if yours differs)
-U8G2_ST7920_128X64_1_HW_SPI u8g2(U8G2_R0, /* cs=*/ 53);
+  // Init input manager (this sets up pins for all inputs declared in config)
+  //initInputManager();
 
-void setup(){ u8g2.begin(); }
-void loop(){
-  u8g2.firstPage();
-  do{
-    u8g2.setFont(u8g2_font_6x10_tf);
-    u8g2.drawStr(0, 12, "U8g2 OK");
-  } while(u8g2.nextPage());
-  delay(500);
+  // Register contexts (menus, live mode, etc.)
+  registerAllContexts();
+
+  // Start in LIVE mode (grid) instead of BOOT
+  setContextByName("LIVE_MODE");
+
+  DL("Setup complete.");
+}
+
+
+void loop() {
+  hal_buttons_poll();  // produce events
+  route_events();      // consume + deliver
+  if (currentContext()) {
+    if (auto* ctx = currentContext()) {
+      ctx->update(&U8G2);
+      ctx->draw(&U8G2);
+    }
+  }
 }
