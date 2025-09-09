@@ -61,5 +61,4 @@ void MainMenuContext::handleInput(int input) {
 void MainMenuContext::update(void* /*gfx*/) {}
 
 MainMenuContext mainMenuContext;
-__attribute__((constructor))
 void registerMainMenuContext() { registerContext("MAIN_MENU", &mainMenuContext); }

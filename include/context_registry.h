@@ -7,8 +7,8 @@
 #include "object_classes.h"
 
 // Maximum number of contexts that can be registered
-#define MAX_CONTEXTS 16
-
+#define MAX_CONTEXTS 20
+//TODO serial output of how many contexts are registered - called by debug
 // Registers a context by name
 void registerContext(const char* name, ContextObject* ctx);
 

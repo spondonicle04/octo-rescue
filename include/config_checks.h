@@ -9,7 +9,7 @@ static_assert(UINT8_MAX == 255,     "uint8_t must be 0..255");
 
 /* Bounds you can override before including this file */
 #ifndef MAX_MENU_ITEMS
-  #define MAX_MENU_ITEMS 32
+  #define MAX_MENU_ITEMS 16
 #endif
 #ifndef MAX_SUBCONTEXTS
   #define MAX_SUBCONTEXTS 16

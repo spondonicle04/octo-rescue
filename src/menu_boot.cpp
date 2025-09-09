@@ -40,8 +40,4 @@ void BootContext::handleInput(int input) {
 }
 // --- Global instance + registration ---
 BootContext bootContext;
-
-__attribute__((constructor))
-void registerBootContext() {
-  registerContext("BOOT", &bootContext);
-}
+void registerBootContext() { registerContext("BOOT", &bootContext); }

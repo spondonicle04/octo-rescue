@@ -2,6 +2,7 @@
 // Implementation of global context registration and lookup.
 
 #include "context_registry.h"
+#include "debug.h"
 #include <string.h> // for strcmp
 
 static const char* contextNames[MAX_CONTEXTS];
@@ -31,4 +32,11 @@ uint8_t getRegisteredContextCount() {
 ContextObject* getContextByIndex(uint8_t index) {
   if (index >= contextCount) return nullptr;
   return contextPointers[index];
+}
+
+void debugPrintRegisteredContextCount() {
+#if DEBUG_SERIAL
+  Serial.print(F("contexts: "));
+  Serial.println(getRegisteredContextCount());
+#endif
 }

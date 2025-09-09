@@ -10,17 +10,19 @@
 // ----- PROGMEM labels -----
 const char S_ITEM_0[] PROGMEM = "Audio Settings";
 const char S_ITEM_1[] PROGMEM = "Display Options";
-const char S_ITEM_2[] PROGMEM = "MIDI Config";
-const char S_ITEM_3[] PROGMEM = "Back";
+const char S_ITEM_2[] PROGMEM = "LED Options";
+const char S_ITEM_3[] PROGMEM = "MIDI Config";
+const char S_ITEM_4[] PROGMEM = "Back";
 const char* const MENU_SETTINGS_ITEMS[] PROGMEM = {
-  S_ITEM_0, S_ITEM_1, S_ITEM_2, S_ITEM_3
+  S_ITEM_0, S_ITEM_1, S_ITEM_2, S_ITEM_3, S_ITEM_4
 };
 
 // ----- PROGMEM destinations -----
 const char* const MENU_SETTINGS_SUBS[] PROGMEM = {
-  "MAIN_MENU",   // TODO: "AUDIO_SETTINGS"
-  "MAIN_MENU",   // TODO: "DISPLAY_OPTIONS"
-  "MAIN_MENU",   // TODO: "MIDI_CONFIG"
+  "MAIN_MENU",        // TODO: "AUDIO_SETTINGS"
+  "DISPLAY_OPTIONS",  // display options
+  "LED_OPTIONS",      // led options
+  "MAIN_MENU",        // TODO: "MIDI_CONFIG"
   "MAIN_MENU",
 };
 static const uint8_t MENU_SETTINGS_COUNT =
@@ -57,5 +59,4 @@ void SettingsMenuContext::handleInput(int input) {
 void SettingsMenuContext::update(void* /*gfx*/) {}
 
 SettingsMenuContext settingsMenuContext;
-__attribute__((constructor))
 void registerSettingsMenuContext() { registerContext("SETTINGS", &settingsMenuContext); }

@@ -55,5 +55,4 @@ void PatternMenuContext::handleInput(int input) {
 void PatternMenuContext::update(void* /*gfx*/) {}
 
 PatternMenuContext patternMenuContext;
-__attribute__((constructor))
 void registerPatternMenuContext() { registerContext("PATTERN_MENU", &patternMenuContext); }

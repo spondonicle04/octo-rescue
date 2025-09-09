@@ -55,5 +55,4 @@ void SaveMenuContext::handleInput(int input) {
 void SaveMenuContext::update(void* /*gfx*/) {}
 
 SaveMenuContext saveMenuContext;
-__attribute__((constructor))
 void registerSaveMenuContext() { registerContext("SAVE_MENU", &saveMenuContext); }

@@ -74,6 +74,8 @@
 #define I2C_ADDR_MCP 0x20
 
 // --- Temp buttons for setup/test
+ #define BTN_LEFT    40
+ #define BTN_RIGHT   41
  #define BTN_LIVE    42
  #define BTN_DOWN    43
  #define BTN_UP      44
