@@ -29,20 +29,42 @@ static void drawLine(U8G2* g, int y, const char* label, const char* value, bool 
 }
 
 void DisplayOptionsContext::draw(void* gfx) {
+  static const char T_DISP_OPTS[]   PROGMEM = "Display Options";
+  static const char L_MAX_BRIGHT[]  PROGMEM = "Max Brightness";
+  static const char L_INVERT[]      PROGMEM = "Invert";
+  static const char L_UNICORN[]     PROGMEM = "Unicorn";
+  static const char L_SAVE[]        PROGMEM = "Save";
+  static const char L_SAVE_SEL[]    PROGMEM = "> Save";
+  static const char V_ON[]          PROGMEM = "On";
+  static const char V_OFF[]         PROGMEM = "Off";
+  static const char V_UNICORN[]     PROGMEM = "UNiCORN!";
+
   U8G2* g = (U8G2*)gfx;
   g->firstPage();
   do {
-    drawTitleWithLines(g, "Display Options", 12, 6);
+    drawTitleWithLines_P(g, T_DISP_OPTS, 12, 6);
     g->setFont(u8g2_font_6x10_tf);
 
     char v1[8]; snprintf(v1, sizeof(v1), "%u%%", (unsigned)maxPct);
-    drawLine(g, 26, "Max Brightness", v1, sel == 0);
+    char lab[20];
 
-    drawLine(g, 38, "Invert", invert ? "On" : "Off", sel == 1);
+    // Max Brightness
+    strncpy_P(lab, L_MAX_BRIGHT, sizeof(lab)-1); lab[sizeof(lab)-1] = '\0';
+    drawLine(g, 26, lab, v1, sel == 0);
 
-    drawLine(g, 50, "Unicorn", "UNiCORN!", sel == 2);
+    // Invert line with PROGMEM values
+    strncpy_P(lab, L_INVERT, sizeof(lab)-1); lab[sizeof(lab)-1] = '\0';
+    char v2[8]; strcpy_P(v2, invert ? V_ON : V_OFF);
+    drawLine(g, 38, lab, v2, sel == 1);
 
-    drawLine(g, 62, sel == 3 ? "> Save" : "Save", nullptr, sel == 3);
+    // Unicorn
+    strncpy_P(lab, L_UNICORN, sizeof(lab)-1); lab[sizeof(lab)-1] = '\0';
+    char v3[16]; strcpy_P(v3, V_UNICORN);
+    drawLine(g, 50, lab, v3, sel == 2);
+
+    // Save
+    strncpy_P(lab, (sel == 3) ? L_SAVE_SEL : L_SAVE, sizeof(lab)-1); lab[sizeof(lab)-1] = '\0';
+    drawLine(g, 62, lab, nullptr, sel == 3);
   } while (g->nextPage());
 }
 
@@ -61,10 +83,10 @@ void DisplayOptionsContext::handleInput(int input) {
       settings_apply_runtime();
       (void)goBack();
     } else if (sel == 0) {
-      setContextByName("DISPLAY_BRIGHTNESS");
+      setContextByName_P(PSTR("DISPLAY_BRIGHTNESS"));
       return;
     } else if (sel == 1) {
-      setContextByName("DISPLAY_INVERT");
+      setContextByName_P(PSTR("DISPLAY_INVERT"));
       return;
     } else if (sel == 2) {
       // Unicorn easter egg: flip invert for fun
@@ -83,15 +105,17 @@ class DisplayBrightnessContext : public ContextObject {
 public:
   DisplayBrightnessContext() : ContextObject("DISPLAY_BRIGHTNESS", "DISPLAY_OPTIONS", nullptr, 0) {}
   void draw(void* gfx) override {
+    static const char T_MAX_BRIGHT[] PROGMEM = "Max Brightness";
+    static const char MSG_ADJ[]      PROGMEM = "Use Up/Down to adjust";
     U8G2* g = (U8G2*)gfx;
     auto& s = settings_get();
     char v[12]; snprintf(v, sizeof(v), "%u%%", (unsigned)s.bl_max_percent);
     g->firstPage();
     do {
-      drawTitleWithLines(g, "Max Brightness", 12, 6);
+      drawTitleWithLines_P(g, T_MAX_BRIGHT, 12, 6);
       g->setFont(u8g2_font_6x10_tf);
+      drawProgmemStr(g, 4, 38, MSG_ADJ);
       int w = g->getDisplayWidth(); int tw = g->getUTF8Width(v);
-      g->drawStr(4, 38, "Use Up/Down to adjust");
       g->drawStr(w - tw - 4, 54, v);
     } while (g->nextPage());
   }
@@ -112,14 +136,18 @@ class DisplayInvertContext : public ContextObject {
 public:
   DisplayInvertContext() : ContextObject("DISPLAY_INVERT", "DISPLAY_OPTIONS", nullptr, 0) {}
   void draw(void* gfx) override {
+    static const char T_INV[]   PROGMEM = "Display Invert";
+    static const char MSG_TGL[] PROGMEM = "Up/Down or Select to toggle";
+    static const char V_ON[]    PROGMEM = "On";
+    static const char V_OFF[]   PROGMEM = "Off";
     U8G2* g = (U8G2*)gfx;
     auto& s = settings_get();
-    const char* v = s.bl_invert ? "On" : "Off";
+    char v[8]; strcpy_P(v, s.bl_invert ? V_ON : V_OFF);
     g->firstPage();
     do {
-      drawTitleWithLines(g, "Display Invert", 12, 6);
+      drawTitleWithLines_P(g, T_INV, 12, 6);
       g->setFont(u8g2_font_6x10_tf);
-      g->drawStr(4, 38, "Up/Down or Select to toggle");
+      drawProgmemStr(g, 4, 38, MSG_TGL);
       int w = g->getDisplayWidth(); int tw = g->getUTF8Width(v);
       g->drawStr(w - tw - 4, 54, v);
     } while (g->nextPage());

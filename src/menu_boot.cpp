@@ -25,17 +25,20 @@ void BootContext::draw(void* gfx) {
   U8G2* gfxU8 = static_cast<U8G2*>(gfx);
   if (!gfxU8) return;
 
+  static const char TITLE_BOOT[] PROGMEM = "Boot";
+  static const char BOOT_STARTING[] PROGMEM = "Starting...";
+
   gfxU8->firstPage();
   do {
-    drawTitleWithLines(gfxU8, "Boot", 12, 6);
+    drawTitleWithLines_P(gfxU8, TITLE_BOOT, 12, 6);
     gfxU8->setFont(u8g2_font_6x10_tf);
-    gfxU8->drawStr(4, 28, "Starting...");
+    drawProgmemStr(gfxU8, 4, 28, BOOT_STARTING);
   } while (gfxU8->nextPage());
 }
 
 void BootContext::handleInput(int input) {
   if (input == KEY_SELECT || input == KEY_BACK) {
-    setContextByName("MAIN_MENU");
+    setContextByName_P(PSTR("MAIN_MENU"));
   }
 }
 // --- Global instance + registration ---

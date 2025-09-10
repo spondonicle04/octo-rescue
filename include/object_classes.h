@@ -15,6 +15,7 @@
 // external navigation helpers – implemented elsewhere
 extern bool goBack();
 extern bool setContextByName(const char* name_in);
+extern bool setContextByName_P(const char* name_in_P);
 
 //-----------------------------------
 // 🧱 Base Object
@@ -84,7 +85,7 @@ public:
       if (subcontextNames && selectedIndex < subcontextCount) {
         const char* dest =
           (const char*)pgm_read_ptr(&subcontextNames[selectedIndex]); // PROGMEM-safe
-        if (dest && dest[0]) setContextByName(dest);
+        if (dest && dest[0]) setContextByName_P(dest);
       }
     } else if (input == KEY_DOWN) {
       if (itemCount) selectedIndex = (uint8_t)((selectedIndex + 1) % itemCount);

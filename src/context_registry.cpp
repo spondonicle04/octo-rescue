@@ -4,6 +4,7 @@
 #include "context_registry.h"
 #include "debug.h"
 #include <string.h> // for strcmp
+#include <avr/pgmspace.h>
 
 static const char* contextNames[MAX_CONTEXTS];
 static ContextObject* contextPointers[MAX_CONTEXTS];
@@ -16,9 +17,15 @@ void registerContext(const char* name, ContextObject* ctx) {
   contextCount++;
 }
 
-ContextObject* getContextByName(const char* name) {
+ContextObject* getContextByName(const char* nameRAM) {
+  if (!nameRAM) return nullptr;
   for (uint8_t i = 0; i < contextCount; ++i) {
-    if (strcmp(contextNames[i], name) == 0) {
+    // Try comparing with the stored pointer treated as PROGMEM first.
+    if (strcmp_P(nameRAM, (PGM_P)contextNames[i]) == 0) {
+      return contextPointers[i];
+    }
+    // Fallback: if the name was stored as a RAM string, compare directly.
+    if (strcmp(contextNames[i], nameRAM) == 0) {
       return contextPointers[i];
     }
   }

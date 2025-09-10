@@ -47,7 +47,7 @@ void DebugMenuContext::handleInput(int input) {
   if (input == 1) {
     if (subcontextNames && selectedIndex < subcontextCount) {
       const char* dest = (const char*)pgm_read_ptr(&subcontextNames[selectedIndex]);
-      setContextByName(dest);
+      setContextByName_P(dest);
     }
     return;
   } else if (input == 2) {
@@ -79,10 +79,11 @@ public:
     showUntil = millis() + 8000; // show results ~8s
   }
   void draw(void* gfx) override {
+    static const char T_SYSINFO[] PROGMEM = "System Info";
     U8G2* g = (U8G2*)gfx;
     g->firstPage();
     do {
-      drawTitleWithLines(g, "System Info", 12, 6);
+      drawTitleWithLines_P(g, T_SYSINFO, 12, 6);
       g->setFont(u8g2_font_6x10_tf);
       // Render up to 5 lines of results
       int y = 26;
@@ -122,17 +123,35 @@ private:
   void append(const char* s) {
     strncat(result, s, sizeof(result)-strlen(result)-1);
   }
+  void appendP(const char* sP) {
+    char buf[64];
+    strncpy_P(buf, sP, sizeof(buf)-1);
+    buf[sizeof(buf)-1] = '\0';
+    append(buf);
+  }
+  void appendLineP(const char* sP) {
+    appendP(sP); append("\n");
+  }
   void appendLine(const char* s) {
     append(s); append("\n");
   }
 
   void runDiagnostics() {
     result[0] = '\0';
-    appendLine("Running diagnostics...");
+    static const char M_I2C[]  PROGMEM = "I2C: ";
+    static const char M_MOK[]  PROGMEM = "MCP23017: OK";
+    static const char M_MNOK[] PROGMEM = "MCP23017: not found";
+    static const char M_ENOK[] PROGMEM = "EEPROM: not found";
+    static const char M_SDOk[] PROGMEM = "SD: OK";
+    static const char M_SDFa[] PROGMEM = "SD: FAIL";
+    static const char M_LBL[]  PROGMEM = "Lights: backlight pulse";
+    static const char M_WIG[]  PROGMEM = "Triggers: wiggle CS pins";
+    static const char M_DONE[] PROGMEM = "Done.";
+    // No intro line to keep key info within first page
 
     // I2C scan
     Wire.begin();
-    append("I2C: ");
+    appendP(M_I2C);
     bool any = false;
     for (uint8_t addr = 1; addr < 127; ++addr) {
       Wire.beginTransmission(addr);
@@ -143,12 +162,15 @@ private:
         append(b);
       }
     }
-    if (!any) append("none");
+    if (!any) {
+      static const char M_NONE[] PROGMEM = "none";
+      appendP(M_NONE);
+    }
     append("\n");
 
     // MCP23017 presence
     bool mcp = probeI2C(I2C_ADDR_MCP);
-    appendLine(mcp ? "MCP23017: OK" : "MCP23017: not found");
+    appendLineP(mcp ? M_MOK : M_MNOK);
 
     // EEPROM presence (24xx @ 0x50-0x57)
     bool eep = false; uint8_t eepAddr = 0x50;
@@ -156,26 +178,26 @@ private:
     if (eep) {
       char b[24]; snprintf(b, sizeof(b), "EEPROM @0x%02X: OK", eepAddr); appendLine(b);
     } else {
-      appendLine("EEPROM: not found");
+      appendLineP(M_ENOK);
     }
 
     // SD card test and read text file
     if (SD.begin(PIN_SD_CS)) {
-      appendLine("SD: OK");
+      appendLineP(M_SDOk);
       readTextFileToResult();
     } else {
-      appendLine("SD: FAIL");
+      appendLineP(M_SDFa);
     }
 
     // Lights/backlight quick pulse
-    appendLine("Lights: backlight pulse");
+    appendLineP(M_LBL);
     pulseBacklight();
 
     // Trigger quick wiggle on DAC CS pins
-    appendLine("Triggers: wiggle CS pins");
+    appendLineP(M_WIG);
     wiggleCsPins();
 
-    appendLine("Done.");
+    appendLineP(M_DONE);
   }
 
   static bool probeI2C(uint8_t addr) {
@@ -206,7 +228,8 @@ private:
       root.close();
     }
     if (f) {
-      appendLine("SD Text:");
+      static const char M_SDTXT[] PROGMEM = "SD Text:";
+      appendLineP(M_SDTXT);
       size_t remain = 120; // cap read to keep screen readable
       while (f.available() && remain--) {
         char c = (char)f.read();
@@ -217,7 +240,8 @@ private:
       append("\n");
       f.close();
     } else {
-      appendLine("(no .txt file found)");
+      static const char M_NONETXT[] PROGMEM = "(no .txt file found)";
+      appendLineP(M_NONETXT);
     }
   }
 
@@ -250,21 +274,25 @@ class TestBeepContext : public ContextObject {
 public:
   TestBeepContext() : ContextObject("TEST_BEEP", "DEBUG", nullptr, 0), freq(880), durMs(200) {}
   void draw(void* gfx) override {
+    static const char T_BEEP[]      PROGMEM = "Test Beep";
     U8G2* g = (U8G2*)gfx;
     g->firstPage();
     do {
-      drawTitleWithLines(g, "Test Beep", 12, 6);
+      drawTitleWithLines_P(g, T_BEEP, 12, 6);
       g->setFont(u8g2_font_6x10_tf);
       char line1[28]; snprintf(line1, sizeof(line1), "Freq: %u Hz", (unsigned)freq);
 #ifdef PIN_BUZZER
+      static const char MSG_CTRL[]    PROGMEM = "Select=Beep  Up/Down=Adj  Back";
       char line2[28]; snprintf(line2, sizeof(line2), "Pin: %u", (unsigned)PIN_BUZZER);
       g->drawStr(4, 30, line1);
       g->drawStr(4, 42, line2);
-      g->drawStr(4, 54, "Select=Beep  Up/Down=Adj  Back");
+      drawProgmemStr(g, 4, 54, MSG_CTRL);
 #else
+      static const char MSG_NOBUZZ[]  PROGMEM = "No buzzer pin set (PIN_BUZZER)";
+      static const char MSG_BACK[]    PROGMEM = "Back to exit";
       g->drawStr(4, 30, line1);
-      g->drawStr(4, 42, "No buzzer pin set (PIN_BUZZER)");
-      g->drawStr(4, 54, "Back to exit");
+      drawProgmemStr(g, 4, 42, MSG_NOBUZZ);
+      drawProgmemStr(g, 4, 54, MSG_BACK);
 #endif
     } while (g->nextPage());
   }

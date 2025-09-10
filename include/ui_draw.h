@@ -3,6 +3,7 @@
 #include <U8g2lib.h>
 #include <avr/pgmspace.h>
 #include <string.h>
+#include "settings_store.h"
 
 // Read a char* from a PROGMEM table of pointers.
 inline const char* readPtrP(const char* const* tableP, uint8_t index) {
@@ -16,6 +17,18 @@ inline void drawProgmemStr(U8G2* gfx, int x, int y, const char* p) {
   strncpy_P(buf, p, sizeof(buf) - 1);
   buf[sizeof(buf) - 1] = '\0';
   gfx->drawStr(x, y, buf);
+}
+
+// Apply global display invert, if enabled in settings.
+inline void applyInvertIfEnabled(U8G2* gfx) {
+  if (!gfx) return;
+  if (settings_get().bl_invert) {
+    const int W = gfx->getDisplayWidth();
+    const int H = gfx->getDisplayHeight();
+    gfx->setDrawColor(2);            // XOR
+    gfx->drawBox(0, 0, W, H);        // invert entire page
+    gfx->setDrawColor(1);            // restore normal draw color
+  }
 }
 
 // Centered title with side lines (RAM title).
@@ -111,6 +124,8 @@ inline void drawMenuPaged(U8G2* gfx,
       const int knobY = barTop + (numer / denom);
       gfx->drawBox(barX - 1, knobY, 3, knobH);
     }
+    // Apply global invert at end of page
+    applyInvertIfEnabled(gfx);
   } while (gfx->nextPage());
 }
 
@@ -167,6 +182,8 @@ inline void drawMenuPagedP(U8G2* gfx,
       const int knobY = barTop + (numer / denom);
       gfx->drawBox(barX - 1, knobY, 3, knobH);
     }
+    // Apply global invert at end of page
+    applyInvertIfEnabled(gfx);
   } while (gfx->nextPage());
 }
 

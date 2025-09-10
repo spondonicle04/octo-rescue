@@ -14,6 +14,7 @@
 #include "event_router.h"
 #include <avr/wdt.h>
 #include <avr/io.h>
+#include <avr/pgmspace.h>
 #include "ui_draw.h"
 
 // Optional display object
@@ -42,7 +43,7 @@ void setup() {
   registerAllContexts();
 
   // Start in LIVE mode (grid) instead of BOOT
-  setContextByName("LIVE_MODE");
+  setContextByName_P(PSTR("LIVE_MODE"));
 
   DL("Setup complete.");
 }

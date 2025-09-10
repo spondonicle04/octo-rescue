@@ -8,6 +8,7 @@
 #include "context_state.h"
 #include "input_codes.h"
 #include <U8g2lib.h>
+#include <avr/pgmspace.h>
 
 LiveModeContext::LiveModeContext()
   : ContextObject("LIVE_MODE", "MAIN_MENU", /*subs*/ nullptr, /*count*/ 0) {
@@ -69,7 +70,7 @@ void LiveModeContext::update(void* /*gfx*/) {
 void LiveModeContext::handleInput(int input) {
   switch (input) {
     case IN_MENU:
-      setContextByName("MAIN_MENU");
+      setContextByName_P(PSTR("MAIN_MENU"));
       break;
 
     case IN_UP:
@@ -100,7 +101,7 @@ void LiveModeContext::handleInput(int input) {
       // ignore
       break;
     case IN_SELECT:
-      setContextByName("MAIN_MENU");
+      setContextByName_P(PSTR("MAIN_MENU"));
       break;
   }
 }

@@ -41,7 +41,7 @@ void SaveMenuContext::handleInput(int input) {
   if (input == 1) {
     if (subcontextNames && selectedIndex < subcontextCount) {
       const char* dest = (const char*)pgm_read_ptr(&subcontextNames[selectedIndex]);
-      setContextByName(dest);
+      setContextByName_P(dest);
     }
     return;
   } else if (input == 2) {

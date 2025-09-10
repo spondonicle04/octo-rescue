@@ -3,6 +3,7 @@
 #include "context_registry.h"   // getContextByName(...)
 #include "context_state.h"
 #include <Arduino.h>
+#include <avr/pgmspace.h>
 
 // Feature flag: enable/disable history at compile time.
 // If CTX_HISTORY_ENABLED is defined elsewhere, we won't overwrite it.
@@ -67,6 +68,14 @@ bool setContextByName(const char* nextName) {
   return true;
 }
 
+bool setContextByName_P(const char* nameP) {
+  if (!nameP) return false;
+  char buf[24];
+  strncpy_P(buf, nameP, sizeof(buf)-1);
+  buf[sizeof(buf)-1] = '\0';
+  return setContextByName(buf);
+}
+
 bool goBack() {
   // Prefer real history first (e.g., after LIVE jump)
 #if CTX_HISTORY_ENABLED
@@ -86,9 +95,9 @@ bool goBack() {
 
   // Fallback: declared parent
   if (gCurrent && gCurrent->parentName && gCurrent->parentName[0]) {
-    return setContextByName(gCurrent->parentName);
+    return setContextByName_P(gCurrent->parentName);
   }
 
   // Last resort: root
-  return setContextByName("MAIN");
+  return setContextByName_P(PSTR("MAIN"));
 }

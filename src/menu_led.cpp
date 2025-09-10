@@ -5,22 +5,33 @@
 #include "context_state.h"
 #include "context_registry.h"
 
-// Simple preset colors (name + RGB)
-struct Preset { const char* name; uint32_t rgb; };
-static const Preset PRESETS[] = {
-  { "White", 0xFFFFFF },
-  { "Warm",  0xFFA040 },
-  { "Red",   0xFF0000 },
-  { "Green", 0x00FF00 },
-  { "Blue",  0x0080FF },
-  { "Cyan",  0x00FFFF },
-  { "Magenta",0xFF00FF },
-  { "Yellow",0xFFFF00 },
+// Simple preset colors (name stored in PROGMEM + RGB)
+struct Preset { const char* nameP; uint32_t rgb; };
+static const char N_WHITE[]  PROGMEM = "White";
+static const char N_WARM[]   PROGMEM = "Warm";
+static const char N_RED[]    PROGMEM = "Red";
+static const char N_GREEN[]  PROGMEM = "Green";
+static const char N_BLUE[]   PROGMEM = "Blue";
+static const char N_CYAN[]   PROGMEM = "Cyan";
+static const char N_MAG[]    PROGMEM = "Magenta";
+static const char N_YEL[]    PROGMEM = "Yellow";
+static const Preset PRESETS[] PROGMEM = {
+  { N_WHITE, 0xFFFFFF },
+  { N_WARM,  0xFFA040 },
+  { N_RED,   0xFF0000 },
+  { N_GREEN, 0x00FF00 },
+  { N_BLUE,  0x0080FF },
+  { N_CYAN,  0x00FFFF },
+  { N_MAG,   0xFF00FF },
+  { N_YEL,   0xFFFF00 },
 };
 static const uint8_t NPRE = sizeof(PRESETS)/sizeof(PRESETS[0]);
 
 static uint8_t findPresetIndex(uint32_t rgb) {
-  for (uint8_t i = 0; i < NPRE; ++i) if (PRESETS[i].rgb == rgb) return i;
+  for (uint8_t i = 0; i < NPRE; ++i) {
+    uint32_t pr = pgm_read_dword(&PRESETS[i].rgb);
+    if (pr == rgb) return i;
+  }
   return 0; // default to first
 }
 
@@ -48,15 +59,31 @@ static void drawLineR(U8G2* g, int y, const char* label, const char* value, bool
 
 void LedOptionsContext::draw(void* gfx) {
   U8G2* g = (U8G2*)gfx;
+  static const char T_LED_OPTS[]  PROGMEM = "LED Options";
+  static const char L_BRIGHT[]    PROGMEM = "Brightness";
+  static const char L_HIT[]       PROGMEM = "Hit Color";
+  static const char L_STEP[]      PROGMEM = "Step Color";
+  static const char L_SAVE[]      PROGMEM = "Save";
+  static const char L_SAVE_SEL[]  PROGMEM = "> Save";
+
   g->firstPage();
   do {
-    drawTitleWithLines(g, "LED Options", 12, 6);
+    drawTitleWithLines_P(g, T_LED_OPTS, 12, 6);
     g->setFont(u8g2_font_6x10_tf);
     char vb[8]; snprintf(vb, sizeof(vb), "%u%%", (unsigned)((brightness * 100u) / 255u));
-    drawLineR(g, 26, "Brightness", vb, sel == 0);
-    drawLineR(g, 38, "Hit Color", PRESETS[hitIndex].name, sel == 1);
-    drawLineR(g, 50, "Step Color", PRESETS[stepIndex].name, sel == 2);
-    drawLineR(g, 62, sel == 3 ? "> Save" : "Save", nullptr, sel == 3);
+    char lab[18];
+    strncpy_P(lab, L_BRIGHT, sizeof(lab)-1); lab[sizeof(lab)-1] = '\0';
+    drawLineR(g, 26, lab, vb, sel == 0);
+    strncpy_P(lab, L_HIT, sizeof(lab)-1); lab[sizeof(lab)-1] = '\0';
+    const char* pHit = (const char*)pgm_read_ptr(&PRESETS[hitIndex].nameP);
+    char vhit[16]; strncpy_P(vhit, pHit, sizeof(vhit)-1); vhit[sizeof(vhit)-1] = '\0';
+    drawLineR(g, 38, lab, vhit, sel == 1);
+    strncpy_P(lab, L_STEP, sizeof(lab)-1); lab[sizeof(lab)-1] = '\0';
+    const char* pStep = (const char*)pgm_read_ptr(&PRESETS[stepIndex].nameP);
+    char vstep[16]; strncpy_P(vstep, pStep, sizeof(vstep)-1); vstep[sizeof(vstep)-1] = '\0';
+    drawLineR(g, 50, lab, vstep, sel == 2);
+    strncpy_P(lab, (sel == 3) ? L_SAVE_SEL : L_SAVE, sizeof(lab)-1); lab[sizeof(lab)-1] = '\0';
+    drawLineR(g, 62, lab, nullptr, sel == 3);
   } while (g->nextPage());
 }
 
@@ -69,19 +96,19 @@ void LedOptionsContext::handleInput(int input) {
     if (sel == 3) {
       auto& s = settings_get();
       s.ws_brightness = brightness;
-      s.ws_hit_color  = PRESETS[hitIndex].rgb;
-      s.ws_step_color = PRESETS[stepIndex].rgb;
+      s.ws_hit_color  = pgm_read_dword(&PRESETS[hitIndex].rgb);
+      s.ws_step_color = pgm_read_dword(&PRESETS[stepIndex].rgb);
       settings_save();
       // No LED runtime apply yet (placeholder)
       (void)goBack();
     } else if (sel == 0) {
-      setContextByName("LED_BRIGHTNESS");
+      setContextByName_P(PSTR("LED_BRIGHTNESS"));
       return;
     } else if (sel == 1) {
-      setContextByName("LED_HIT_COLOR");
+      setContextByName_P(PSTR("LED_HIT_COLOR"));
       return;
     } else if (sel == 2) {
-      setContextByName("LED_STEP_COLOR");
+      setContextByName_P(PSTR("LED_STEP_COLOR"));
       return;
     }
   } else if (input == KEY_BACK) {
@@ -101,11 +128,13 @@ public:
     auto& s = settings_get();
     uint8_t pct = (uint16_t)s.ws_brightness * 100u / 255u;
     char v[16]; snprintf(v, sizeof(v), "%u (%u%%)", (unsigned)s.ws_brightness, (unsigned)pct);
+    static const char T_LED_BRIGHT[] PROGMEM = "LED Brightness";
+    static const char MSG_ADJ[]      PROGMEM = "Use Up/Down to adjust";
     g->firstPage();
     do {
-      drawTitleWithLines(g, "LED Brightness", 12, 6);
+      drawTitleWithLines_P(g, T_LED_BRIGHT, 12, 6);
       g->setFont(u8g2_font_6x10_tf);
-      g->drawStr(4, 38, "Use Up/Down to adjust");
+      drawProgmemStr(g, 4, 38, MSG_ADJ);
       int w = g->getDisplayWidth(); int tw = g->getUTF8Width(v);
       g->drawStr(w - tw - 4, 54, v);
     } while (g->nextPage());
@@ -130,12 +159,15 @@ public:
     U8G2* g = (U8G2*)gfx;
     auto& s = settings_get();
     uint8_t idx = findPresetIndex(s.ws_hit_color);
-    const char* name = PRESETS[idx].name;
+    const char* p = (const char*)pgm_read_ptr(&PRESETS[idx].nameP);
+    char name[16]; strncpy_P(name, p, sizeof(name)-1); name[sizeof(name)-1] = '\0';
+    static const char T_HIT[]   PROGMEM = "Hit Color";
+    static const char MSG_PRE[] PROGMEM = "Up/Down to change preset";
     g->firstPage();
     do {
-      drawTitleWithLines(g, "Hit Color", 12, 6);
+      drawTitleWithLines_P(g, T_HIT, 12, 6);
       g->setFont(u8g2_font_6x10_tf);
-      g->drawStr(4, 38, "Up/Down to change preset");
+      drawProgmemStr(g, 4, 38, MSG_PRE);
       int w = g->getDisplayWidth(); int tw = g->getUTF8Width(name);
       g->drawStr(w - tw - 4, 54, name);
     } while (g->nextPage());
@@ -143,8 +175,8 @@ public:
   void handleInput(int input) override {
     auto& s = settings_get();
     uint8_t idx = findPresetIndex(s.ws_hit_color);
-    if (input == KEY_UP)   { idx = (uint8_t)((idx + 1) % NPRE); s.ws_hit_color = PRESETS[idx].rgb; }
-    else if (input == KEY_DOWN) { idx = (uint8_t)((idx + NPRE - 1) % NPRE); s.ws_hit_color = PRESETS[idx].rgb; }
+    if (input == KEY_UP)   { idx = (uint8_t)((idx + 1) % NPRE); s.ws_hit_color = pgm_read_dword(&PRESETS[idx].rgb); }
+    else if (input == KEY_DOWN) { idx = (uint8_t)((idx + NPRE - 1) % NPRE); s.ws_hit_color = pgm_read_dword(&PRESETS[idx].rgb); }
     else if (input == KEY_BACK || input == KEY_SELECT) { (void)goBack(); }
   }
   void update(void* /*gfx*/) override {}
@@ -161,12 +193,15 @@ public:
     U8G2* g = (U8G2*)gfx;
     auto& s = settings_get();
     uint8_t idx = findPresetIndex(s.ws_step_color);
-    const char* name = PRESETS[idx].name;
+    const char* p = (const char*)pgm_read_ptr(&PRESETS[idx].nameP);
+    char name[16]; strncpy_P(name, p, sizeof(name)-1); name[sizeof(name)-1] = '\0';
+    static const char T_STEP[]  PROGMEM = "Step Color";
+    static const char MSG_PRE[] PROGMEM = "Up/Down to change preset";
     g->firstPage();
     do {
-      drawTitleWithLines(g, "Step Color", 12, 6);
+      drawTitleWithLines_P(g, T_STEP, 12, 6);
       g->setFont(u8g2_font_6x10_tf);
-      g->drawStr(4, 38, "Up/Down to change preset");
+      drawProgmemStr(g, 4, 38, MSG_PRE);
       int w = g->getDisplayWidth(); int tw = g->getUTF8Width(name);
       g->drawStr(w - tw - 4, 54, name);
     } while (g->nextPage());
@@ -174,8 +209,8 @@ public:
   void handleInput(int input) override {
     auto& s = settings_get();
     uint8_t idx = findPresetIndex(s.ws_step_color);
-    if (input == KEY_UP)   { idx = (uint8_t)((idx + 1) % NPRE); s.ws_step_color = PRESETS[idx].rgb; }
-    else if (input == KEY_DOWN) { idx = (uint8_t)((idx + NPRE - 1) % NPRE); s.ws_step_color = PRESETS[idx].rgb; }
+    if (input == KEY_UP)   { idx = (uint8_t)((idx + 1) % NPRE); s.ws_step_color = pgm_read_dword(&PRESETS[idx].rgb); }
+    else if (input == KEY_DOWN) { idx = (uint8_t)((idx + NPRE - 1) % NPRE); s.ws_step_color = pgm_read_dword(&PRESETS[idx].rgb); }
     else if (input == KEY_BACK || input == KEY_SELECT) { (void)goBack(); }
   }
   void update(void* /*gfx*/) override {}

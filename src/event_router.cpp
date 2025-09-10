@@ -5,6 +5,7 @@
 #include "event_bus.h"
 #include "hal_buttons_simple.h"   // FnKey enums
 #include <Arduino.h>
+#include <avr/pgmspace.h>
 
 static void deliverToContext(InputCode code) {
   if (auto* ctx = currentContext()) ctx->handleInput((int)code);
@@ -17,9 +18,9 @@ static void handleFnKey(uint8_t fn) {
     case FN_DOWN:   deliverToContext(IN_DOWN);   break;
     // case FN_LEFT:   deliverToContext(IN_LEFT);   break;
     // case FN_RIGHT:  deliverToContext(IN_RIGHT);  break;
-    case FN_BACK:   if (!goBack()) setContextByName("MAIN_MENU");
+    case FN_BACK:   if (!goBack()) setContextByName_P(PSTR("MAIN_MENU"));
     break; // or "MAIN"
-    case FN_LIVE:   setContextByName("LIVE_MODE");
+    case FN_LIVE:   setContextByName_P(PSTR("LIVE_MODE"));
     break;
     default: break;
   }
